@@ -113,19 +113,21 @@ data_agent = Agent(
     name="KitchenManager",
     model=model,
     instruction=data_agent_prompt,
-    tools=[fetch_recent_grocery_data, read_memory_bank]
+    tools=[fetch_recent_grocery_data, read_memory_bank],
+    output_key="kitchen_state",
 )
 
 # 2. Planner Agent
 planner_agent_prompt = """
 You are the **Creative Chef**.
-Receive the 'Kitchen State' from the Kitchen Manager.
+You must generate lunch options based **ONLY** on the following data:
+**KITCHEN STATE REPORT:** {kitchen_state}
 
 Your goal is to generate **3 distinct Lunch Options**.
 
 **Constraint Checklist:**
-1. MUST use at least one 'Available Vegetable' listed.
-2. MUST NOT be a 'Forbidden Meal' (recently eaten).
+1. MUST use at least one 'Available Vegetable' listed in the report.
+2. MUST NOT be a 'Forbidden Meal' listed in the report.
 3. If the user has 'Favorites' in memory that match the ingredients, prioritize one of them.
 
 Output format:
@@ -137,25 +139,29 @@ Output format:
 planner_agent = Agent(
     name="CreativeChef",
     model=model,
-    instruction=planner_agent_prompt
+    instruction=planner_agent_prompt,
+    # CRITICAL FIX: Define the output key for the next agent to use
+    output_key="meal_options"
 )
 
 # 3. Selection Agent
 selection_agent_prompt = """
 You are the **Final Decision Maker**.
-Pick the SINGLE best lunch option from the Chef's list.
+Review the following meal options and select the single best choice:
+**MEAL OPTIONS:** {meal_options}
 
 **Action:**
-1. Choose the meal that uses the most perishable ingredient or is a family favorite.
-2. Use `send_discord_notification` to send the final decision.
-3. **Crucial:** You must format the message beautifully for Discord (use bolding and emojis).
+1. Pick the SINGLE best lunch option from the list above. The selection criteria is to maximize perishable ingredient use or prioritize a family favorite.
+2. Draft the final, beautiful Discord message based on your selection (use bolding and emojis).
+3. Use the `send_discord_notification` tool with your drafted message as the argument.
 """
 
 selection_agent = Agent(
     name="DecisionMaker",
     model=model,
     instruction=selection_agent_prompt,
-    tools=[send_discord_notification]
+    tools=[send_discord_notification],
+    # No output_key needed here if this is the final agent
 )
 
 # --- Workflow Execution ---
