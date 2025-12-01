@@ -29,13 +29,13 @@ This project demonstrates the core concepts of Agentic AI:
 
 1.  **Clone the Repository:**
     ```bash
-    git clone `https://github.com/AsfandSoomro/meal-planner`
-    cd Meal-Planner-Agent
+    git clone https://github.com/AsfandSoomro/meal-planner.git
+    cd meal-planner
     ```
 
 2.  **Install Dependencies:**
     ```bash
-    pip install -r requirements.txt
+    uv sync
     ```
 
 3.  **Configure Environment:**
@@ -52,4 +52,4 @@ This project demonstrates the core concepts of Agentic AI:
 Execute the main script:
 
 ```bash
-python meal_planner.py
+python main.py
