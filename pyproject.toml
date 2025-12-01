@@ -1,0 +1,17 @@
+[project]
+name = "meal-planner"
+version = "0.1.0"
+description = "Meal Planner AI Agent using Google ADK"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "google-adk>=1.19.0",
+    "pandas>=2.3.3",
+    "discord-webhook>=0.5.2",
+    "python-dotenv>=1.0.0",
+    "google-auth>=2.31.0",
+    "google-auth-oauthlib>=1.0.0",
+    "google-auth-httplib2>=0.1.0",
+    "google-api-core>=2.12.0",
+    "google-api-python-client>=2.12.0",
+]
