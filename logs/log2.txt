@@ -1,0 +1,39 @@
+(meal_planner) PS G:\My Drive\Work and Learning\Courses\Kaggle\5-Day AI Agents Intensive Course with Google\Capstone Project\meal_planner> py .\main.py
+🚀 Starting Agentic Meal Planner...
+
+ ### Created new session: debug_session_id
+
+User > Check the fridge and plan tomorrow's lunch.
+Warning: there are non-text parts in the response: ['function_call', 'function_call'], returning concatenated text result from text parts. Check the full candidates.content.parts accessor to get the full model response.
+📊 Connecting to Google Sheet ID: 11IzXlrOLpNl7gcBQr4b3V_PCWSgi5qpsMla4Kip6eN4...
+KitchenManager > Kitchen State:
+
+AVAILABLE VEGETABLES:
+* Kheera
+* Adrak - Desi
+* Lehsan - China
+* Gajar
+* Aloo - Lal
+* Tomato
+* Piaz - Vip
+* Chakundar
+* Shimla Mirch
+* Gobi - Phool
+* Guar Ke Phalli
+* Bhindi
+* Palak - Desi
+* Bangan - Gol
+* Lehsan - Hara
+* Hari Piaz
+* Onion
+
+FORBIDDEN MEALS (suggested in the last 2 weeks):
+* None
+CreativeChef > 1. Aloo Gobi - Aloo - Lal & Gobi - Phool - This is a classic and hearty meal using two readily available vegetables, Aloo and Gobi, along with other spices.
+2. Palak Sabzi with Aloo - Palak - Desi & Aloo - Lal - A nutritious and flavorful option, combining fresh Palak with Aloo.
+3. Bhindi Masala - Bhindi - A popular and distinct dry vegetable dish, perfect for a satisfying lunch.
+💾 Saved 'Palak Sabzi with Aloo' to meal history
+📨 Sending notification to Discord...
+DecisionMaker > I've selected **Palak Sabzi with Aloo** for tomorrow's lunch! It's a nutritious and flavorful option, maximizing the use of our fresh Palak.
+
+📢 **Lunch Plan for Tomorrow: Palak Sabzi with Aloo!** 🍲✨ A delicious and nutritious choice to keep us energized. Enjoy!
