@@ -1,0 +1,27 @@
+(meal_planner) PS G:\My Drive\Work and Learning\Courses\Kaggle\5-Day AI Agents Intensive Course with Google\Capstone Project\meal_planner> py .\main.py
+🚀 Starting Agentic Meal Planner...
+
+ ### Created new session: debug_session_id
+
+User > Check the fridge and plan tomorrow's lunch.
+Warning: there are non-text parts in the response: ['function_call', 'function_call'], returning concatenated text result from text parts. Check the full candidates.content.parts accessor to get the full model response.
+📊 Connecting to Google Sheet ID: 11IzXlrOLpNl7gcBQr4b3V_PCWSgi5qpsMla4Kip6eN4...
+📝 Creating helper sheet 'MealPlannerFilteredData'...
+🔄 Updating QUERY formula...
+📥 Fetching filtered data from server...
+✅ Found 13 ingredients from last 4 days (server-side filtered)
+KitchenManager > Kitchen State:
+
+**AVAILABLE INGREDIENTS:**
+*   **Vegetables:** Gajar, Bhindi, Palak - Desi, Guar Ke Phalli, Tomato, Aloo - Lal, Gobi - Phool, Kheera, Onion
+*   **Spices/Condiments:** Adrak - Desi
+*   **Poultry:** Egg, Boneless Chicken
+
+**FORBIDDEN MEALS (suggested in the last 7 days):**
+*   Palak Sabzi with Aloo
+CreativeChef > 1. Chicken Handi White - Boneless Chicken, Onion, Tomato, Adrak - Desi - This is a favorite meal and all necessary ingredients are available.
+2. Bhindi Sabzi - Bhindi, Onion, Tomato, Adrak - Desi - A simple and distinct vegetable dish using fresh bhindi.
+3. Gobi Aloo - Gobi - Phool, Aloo - Lal, Onion, Tomato, Adrak - Desi - A hearty and distinct vegetable combination, not on the forbidden list.
+💾 Saved 'Chicken Handi White' to meal history
+📨 Sending notification to Discord...
+DecisionMaker > The selected meal for tomorrow is **Chicken Handi White**! 🐔🍚 A family favorite!

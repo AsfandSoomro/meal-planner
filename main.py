@@ -34,54 +34,144 @@ model = Gemini(model="gemini-2.5-flash", retry_config=retry_config)
 
 def fetch_recent_grocery_data():
     """
-    Connects to the real Google Sheet, downloads the data, and filters
-    for items bought in the last 14 days to find available inventory.
+    Connects to the real Google Sheet with SERVER-SIDE filtering using QUERY.
+    Only fetches items from the last 4 days (filtered in spreadsheet as a seprate sheet).
+    Filters for Vegetables, Spices/Condiments, and Poultry.
+    
+    Requires a helper sheet named 'MealPlannerFilteredData' with a QUERY formula.
     """
     print(f"📊 Connecting to Google Sheet ID: {SPREADSHEET_ID}...")
     
-    # Authenticate with Google Sheets
+    # Calculate cutoff date (4 days ago)
+    cutoff_date = datetime.now() - timedelta(days=4)
+    
+    # Authenticate with Google Sheets (needs write permission for helper sheet approach)
+    creds = service_account.Credentials.from_service_account_file(
+        SERVICE_ACCOUNT_FILE, 
+        scopes=['https://www.googleapis.com/auth/spreadsheets']  # Need write permission
+    )
+    service = build('sheets', 'v4', credentials=creds)
+    
+    # Get the main sheet name
+    main_sheet = SHEET_RANGE.split('!')[0] if '!' in SHEET_RANGE else 'Sheet1'
+    helper_sheet = 'MealPlannerFilteredData'
+    
+    # Build QUERY formula for server-side filtering
+    # Using DAY, MONTH, YEAR columns (I=9, J=10, K=11 in 1-indexed)
+    query_formula = f"""=QUERY({main_sheet}!A:K, "SELECT A, B, C, D, E, F, G, H, I, J, K WHERE (K > {cutoff_date.year} OR (K = {cutoff_date.year} AND J > {cutoff_date.month}) OR (K = {cutoff_date.year} AND J = {cutoff_date.month} AND I >= {cutoff_date.day})) AND (D contains 'Vegetable' OR D contains 'Spice' OR D contains 'Condiment' OR D contains 'Poultry')", 1)"""
+    
+    try:
+        # Check if helper sheet exists, if not create it
+        spreadsheet = service.spreadsheets().get(spreadsheetId=SPREADSHEET_ID).execute()
+        sheets = spreadsheet.get('sheets', [])
+        helper_exists = any(sheet['properties']['title'] == helper_sheet for sheet in sheets)
+        
+        if not helper_exists:
+            # Create helper sheet
+            print(f"📝 Creating helper sheet '{helper_sheet}'...")
+            request_body = {
+                'requests': [{
+                    'addSheet': {
+                        'properties': {
+                            'title': helper_sheet
+                        }
+                    }
+                }]
+            }
+            service.spreadsheets().batchUpdate(
+                spreadsheetId=SPREADSHEET_ID,
+                body=request_body
+            ).execute()
+        
+        # Update the helper sheet with QUERY formula
+        print(f"🔄 Updating QUERY formula...")
+        service.spreadsheets().values().update(
+            spreadsheetId=SPREADSHEET_ID,
+            range=f"{helper_sheet}!A1",
+            valueInputOption='USER_ENTERED',
+            body={'values': [[query_formula]]}
+        ).execute()
+        
+        # Give Google Sheets a moment to process the QUERY
+        import time
+        time.sleep(1)
+        
+        # Read the filtered data from helper sheet
+        print(f"📥 Fetching filtered data from server...")
+        result = service.spreadsheets().values().get(
+            spreadsheetId=SPREADSHEET_ID,
+            range=f"{helper_sheet}!A2:K"  # Skip header row
+        ).execute()
+        
+        values = result.get('values', [])
+        
+        if not values:
+            print("⚠️ No ingredients found in the last 4 days")
+            return "No ingredients found in the last 4 days. Check if 'CATEGORY' column matches target categories."
+        
+        # Convert to readable list
+        inventory_list = []
+        for row in values:
+            if len(row) >= 11:  # Ensure row has all columns
+                item = row[1]  # ITEM (column B)
+                qty = row[4]   # QTY (column E)
+                unit = row[5]  # UNIT (column F)
+                category = row[3]  # CATEGORY (column D)
+                date_str = row[0]  # DATE (column A)
+                
+                inventory_list.append(
+                    f"{item} ({qty} {unit}) - {category} - bought on {date_str}"
+                )
+        
+        print(f"✅ Found {len(inventory_list)} ingredients from last 4 days")
+        return "\n".join(inventory_list)
+        
+    except Exception as e:
+        print(f"❌ Error with server-side filtering: {str(e)}")
+        print("⚠️ Falling back to client-side filtering...")
+        
+        # Fallback to client-side filtering if server-side fails
+        return fetch_recent_grocery_data_fallback()
+
+def fetch_recent_grocery_data_fallback():
+    """Fallback method using client-side filtering if server-side fails."""
+    print(f"📊 Using client-side filtering fallback...")
+    
     creds = service_account.Credentials.from_service_account_file(
         SERVICE_ACCOUNT_FILE, 
         scopes=['https://www.googleapis.com/auth/spreadsheets.readonly']
     )
     service = build('sheets', 'v4', credentials=creds)
-
-    # Fetch Data
+    
     sheet = service.spreadsheets()
     result = sheet.values().get(spreadsheetId=SPREADSHEET_ID, range=SHEET_RANGE).execute()
     values = result.get('values', [])
-
+    
     if not values:
         return "No data found in the spreadsheet."
-
-    # Convert to DataFrame using your specific columns
-    # We assume the first row in 'values' contains headers, but we force your names just in case
+    
     expected_cols = ["DATE", "ITEM", "STORE", "CATEGORY", "QTY", "UNIT", "PRICE", "COMMENT", "DAY", "MONTH", "YEAR"]
-    
-    # If the sheet has headers, skip row 0, else use all. 
-    # Adjust logic if your sheet starts data at row 2.
     df = pd.DataFrame(values[1:], columns=expected_cols)
-
-    # Data Cleaning & Date Parsing
-    # Assuming DATE is in a standard format (e.g., YYYY-MM-DD or DD/MM/YYYY)
-    df['DATE'] = pd.to_datetime(df['DATE'], errors='coerce') 
     
-    # Filter: Last 14 Days
-    two_weeks_ago = datetime.now() - timedelta(days=14)
-    recent_items = df[df['DATE'] >= two_weeks_ago]
-
-    # Filter: Vegetables Only (Adjust 'Vegetable' to match your exact CATEGORY text)
-    # We use string contains to be safe (e.g. "Vegetables", "Veggies", "Fresh Vegetables")
-    veggies = recent_items[recent_items['CATEGORY'].astype(str).str.contains("Veg", case=False, na=False)]
-
-    # Convert to a readable list for the Agent
+    df['DATE'] = pd.to_datetime(df['DATE'], errors='coerce')
+    four_days_ago = datetime.now() - timedelta(days=4)
+    recent_items = df[df['DATE'] >= four_days_ago]
+    
+    target_categories = ["Vegetable", "Spice", "Condiment", "Poultry"]
+    category_mask = recent_items['CATEGORY'].astype(str).str.contains(
+        '|'.join(target_categories), case=False, na=False
+    )
+    filtered_items = recent_items[category_mask]
+    
     inventory_list = []
-    for _, row in veggies.iterrows():
-        inventory_list.append(f"{row['ITEM']} ({row['QTY']} {row['UNIT']}) bought on {row['DATE'].strftime('%Y-%m-%d')}")
-
+    for _, row in filtered_items.iterrows():
+        inventory_list.append(
+            f"{row['ITEM']} ({row['QTY']} {row['UNIT']}) - {row['CATEGORY']} - bought on {row['DATE'].strftime('%Y-%m-%d')}"
+        )
+    
     if not inventory_list:
-        return "No vegetables found bought in the last 14 days. Check if 'CATEGORY' column matches 'Veg'."
-
+        return "No ingredients found in the last 4 days."
+    
     return "\n".join(inventory_list)
 
 def read_memory_bank():
@@ -94,7 +184,7 @@ def read_memory_bank():
         return {
             "dislikes": [], 
             "favorites": ["Daal Chawal", "Chicken Handi White"], 
-            "last_14_days_suggestions": [] 
+            "last_7_days_suggestions": [] 
         }
 
 def write_memory_bank(data: dict):
@@ -127,7 +217,7 @@ def update_preferences(favorite: str = None, dislike: str = None):
 
 def save_selected_meal(meal_name: str):
     """
-    Saves the selected meal to the last 14 days suggestions.
+    Saves the selected meal to the last 7 days suggestions.
     Used by the Selection Agent to track recent meal choices.
     
     Args:
@@ -142,22 +232,22 @@ def save_selected_meal(meal_name: str):
     }
     
     # Initialize list if it doesn't exist
-    if "last_14_days_suggestions" not in memory:
-        memory["last_14_days_suggestions"] = []
+    if "last_7_days_suggestions" not in memory:
+        memory["last_7_days_suggestions"] = []
     
     # Add new suggestion
-    memory["last_14_days_suggestions"].append(suggestion_entry)
+    memory["last_7_days_suggestions"].append(suggestion_entry)
     
-    # Keep only last 14 days (prune old entries)
-    cutoff_date = datetime.now() - timedelta(days=14)
-    memory["last_14_days_suggestions"] = [
-        entry for entry in memory["last_14_days_suggestions"]
+    # Keep only last 7 days (prune old entries)
+    cutoff_date = datetime.now() - timedelta(days=7)
+    memory["last_7_days_suggestions"] = [
+        entry for entry in memory["last_7_days_suggestions"]
         if datetime.strptime(entry["date"], "%Y-%m-%d") >= cutoff_date
     ]
     
     write_memory_bank(memory)
     print(f"💾 Saved '{meal_name}' to meal history")
-    return f"Saved '{meal_name}' to last 14 days suggestions."
+    return f"Saved '{meal_name}' to last 7 days suggestions."
 
 def send_discord_notification(message: str):
     """Sends the final meal plan to Discord."""
@@ -174,10 +264,10 @@ You are the **Inventory & Context Manager**.
 Your goal is to inspect the real grocery data and preparation history.
 
 1. **Get Real Inventory:** Call `fetch_recent_grocery_data` to see what was bought recently.
-2. **Check Memory:** Call `read_memory_bank` to see what was suggested in the last 2 weeks to avoid repeats.
+2. **Check Memory:** Call `read_memory_bank` to see what was suggested in the last 7 days to avoid repeats.
 3. **Report:** Output a 'Kitchen State' summary.
-   - List the AVAILABLE VEGETABLES based on the tool output.
-   - List the FORBIDDEN MEALS (those suggested in the last 2 weeks).
+   - List the AVAILABLE INGREDIENTS (vegetables, spices, condiments, poultry) based on the tool output.
+   - List the FORBIDDEN MEALS (those suggested in the last 7 days).
 """
 
 data_agent = Agent(
@@ -197,14 +287,14 @@ You must generate lunch options based **ONLY** on the following data:
 Your goal is to generate **3 distinct Lunch Options**.
 
 **Constraint Checklist:**
-1. MUST use at least one 'Available Vegetable' listed in the report.
+1. MUST use at least one 'Available Ingredient' (vegetables, spices, condiments, or poultry) listed in the report.
 2. MUST NOT be a 'Forbidden Meal' listed in the report.
 3. If the user has 'Favorites' in memory that match the ingredients, prioritize one of them.
 4. OPTIONAL: If you identify a meal that should be added to favorites or dislikes based on patterns, 
    you can use the `update_preferences` tool to save it.
 
 Output format:
-1. [Meal Name] - [Main Veggie] - [Reason]
+1. [Meal Name] - [Main Ingredients] - [Reason]
 2. [Meal Name] - ...
 3. [Meal Name] - ...
 """

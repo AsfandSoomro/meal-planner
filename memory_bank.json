@@ -4,9 +4,13 @@
     "Daal Chawal",
     "Chicken Handi White"
   ],
-  "last_14_days_suggestions": [
+  "last_7_days_suggestions": [
     {
       "meal": "Palak Sabzi with Aloo",
+      "date": "2025-12-02"
+    },
+    {
+      "meal": "Chicken Handi White",
       "date": "2025-12-02"
     }
   ]
