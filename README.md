@@ -15,7 +15,7 @@ This project demonstrates the core concepts of Agentic AI:
     * **Creative Chef:** Generates constrained meal options.
     * **Decision Maker:** Selects the best option and notifies.
 * **Custom Tools:** Integration with the **Google Sheets API** to access real-time grocery expense data for inventory management.
-* **Persistent Memory:** Uses a local JSON-based **Memory Bank** to store family preferences and track meals suggested in the past 14 days, ensuring variety.
+* **Persistent Memory:** Uses a local JSON-based **Memory Bank** to store family preferences and track meals suggested in the past 7 days, ensuring variety.
 * **Action Output:** Uses a **Discord Webhook** tool to push the final, actionable plan directly to the user.
 
 ## ⚙️ Setup and Installation
@@ -24,6 +24,35 @@ This project demonstrates the core concepts of Agentic AI:
 
 1.  **Google Gemini API Key** and necessary Google Cloud setup (Service Account JSON file named `service_account.json`).
 2.  **Discord Webhook URL** for notifications.
+3.  **Google Sheet with Grocery Data** - Your spreadsheet **must** have the following structure:
+
+    #### Required Columns (in this exact order):
+    | Column | Name | Description | Example |
+    |--------|------|-------------|---------|
+    | A | DATE | Date in any standard format | 2025-12-01 |
+    | B | ITEM | Name of the grocery item | Tomatoes |
+    | C | STORE | Store name | Local Market |
+    | D | CATEGORY | Category (see below) | Vegetable |
+    | E | QTY | Quantity purchased | 2 |
+    | F | UNIT | Unit of measurement | kg |
+    | G | PRICE | Price paid | 150 |
+    | H | COMMENT | Optional notes | Fresh |
+    | I | DAY | Day of month (1-31) | 1 |
+    | J | MONTH | Month number (1-12) | 12 |
+    | K | YEAR | Year | 2025 |
+
+    #### Required Category Values:
+    The `CATEGORY` column (column D) should contain one of these values for items to be included:
+    - **Vegetable**
+    - **Spice and Condiment** (or any text containing "Spice" or "Condiment")
+    - **Poultry** (or any text containing "Poultry")
+
+    #### Helper Sheet:
+    The application will automatically create a helper sheet named `MealPlannerFilteredData` in your spreadsheet to perform server-side filtering. This sheet will contain a QUERY formula that filters data for the last 4 days.
+
+    #### Service Account Permissions:
+    - Your service account needs **write access** to the spreadsheet (not just read-only) to create and update the helper sheet.
+    - Share your Google Sheet with the service account email address (found in `service_account.json`).
 
 ### Steps
 
@@ -53,3 +82,4 @@ Execute the main script:
 
 ```bash
 python main.py
+```
