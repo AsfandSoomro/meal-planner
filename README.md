@@ -41,7 +41,7 @@ This project demonstrates the core concepts of Agentic AI:
 3.  **Configure Environment:**
     Create a file named **`.env`** and fill in your details:
     ```env
-    GEMINI_API_KEY=your_gemini_key_here
+    GOOGLE_API_KEY=your_gemini_key_here
     DISCORD_WEBHOOK_URL=your_discord_webhook_url_here
     GOOGLE_SHEET_ID=your_google_sheet_id_here
     GOOGLE_SHEET_RANGE=Sheet1!A:K 
