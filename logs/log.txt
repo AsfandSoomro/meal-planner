@@ -1,0 +1,16 @@
+(meal_planner) PS G:\My Drive\Work and Learning\Courses\Kaggle\5-Day AI Agents Intensive Course with Google\Capstone Project\meal_planner> py .\main.py
+🚀 Starting Agentic Meal Planner...
+
+ ### Created new session: debug_session_id
+
+User > Check the fridge and plan tomorrow's lunch.
+Warning: there are non-text parts in the response: ['function_call'], returning concatenated text result from text parts. Check the full candidates.content.parts accessor to get the full model response.
+📊 Connecting to Google Sheet ID: 11IzXlrOLpNl7gcBQr4b3V_PCWSgi5qpsMla4Kip6eN4...
+KitchenManager > Kitchen State:
+AVAILABLE VEGETABLES: Kheera, Adrak - Desi, Lehsan - China, Gajar, Aloo - Lal, Tomato, Piaz - Vip, Chakundar, Shimla Mirch, Gobi - Phool, Guar Ke Phalli, Bhindi, Palak - Desi, Bangan - Gol, Lehsan - Hara, Hari Piaz, Onion
+FORBIDDEN MEALS: None
+CreativeChef > 1.  Aloo Gobi ki Sabzi - Aloo - Lal & Gobi - Phool - A popular and hearty combination utilizing two main available vegetables.
+2.  Palak Aloo Curry - Palak - Desi - A nutritious and comforting dish made with fresh spinach and potatoes.
+3.  Bhindi Masala - Bhindi - A flavorful and distinct preparation using the available okra and aromatic spices.
+📨 Sending notification to Discord...
+DecisionMaker > I've made the decision to go with Palak Aloo Curry for tomorrow's lunch, prioritizing the use of perishable spinach. I've also sent out a Discord notification with the meal plan!

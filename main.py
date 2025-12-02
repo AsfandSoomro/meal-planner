@@ -6,8 +6,11 @@ from dotenv import load_dotenv
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from google.adk.agents import Agent, SequentialAgent
-from google.adk.model import Model
+from google.adk.models.google_llm import Gemini
+from google.adk.runners import InMemoryRunner
+from google.genai import types
 from discord_webhook import DiscordWebhook
+import asyncio
 
 # 1. Load Environment Variables
 load_dotenv()
@@ -18,8 +21,14 @@ SPREADSHEET_ID = os.getenv("GOOGLE_SHEET_ID")
 SHEET_RANGE = os.getenv("GOOGLE_SHEET_RANGE", "Sheet1!A:K")
 SERVICE_ACCOUNT_FILE = 'service_account.json'
 
-# Initialize Model
-model = Model(model="gemini-2.5-flash", api_key=GEMINI_API_KEY)
+retry_config=types.HttpRetryOptions(
+    attempts=5,  # Maximum retry attempts
+    exp_base=7,  # Delay multiplier
+    initial_delay=1,
+    http_status_codes=[429, 500, 503, 504], # Retry on these HTTP errors
+)
+
+model = Gemini(model="gemini-2.5-flash", retry_config=retry_config)
 
 # --- REAL Tool Definitions ---
 
@@ -164,20 +173,18 @@ selection_agent = Agent(
     # No output_key needed here if this is the final agent
 )
 
-# --- Workflow Execution ---
 
-def run_meal_planner():
+async def run_meal_planner():
     print("🚀 Starting Agentic Meal Planner...")
     
-    # Sequential Workflow
-    workflow = SequentialAgent(
-        agents=[data_agent, planner_agent, selection_agent]
+    root_agent = SequentialAgent(
+        name="MealPlanner",
+        sub_agents=[data_agent, planner_agent, selection_agent]
     )
-    
-    # Run
-    result = workflow.run("Check the fridge and plan tomorrow's lunch.")
-    print("✅ Process Complete.")
-    return result
+
+    runner = InMemoryRunner(agent=root_agent)
+    response = await runner.run_debug("Check the fridge and plan tomorrow's lunch.")
+    return response
 
 if __name__ == "__main__":
-    run_meal_planner()
+    asyncio.run(run_meal_planner())
